@@ -1,8 +1,11 @@
 const express = require('express');
 const path = require('path');
 const socket = require('socket.io');
+
 const app = express();
 const userController = require('./controllers/userController');
+const editorController = require('./controllers/editorController');
+
 const PORT = 3000;
 
 const server = app.listen(PORT, () => {
@@ -42,9 +45,12 @@ app.use(express.json());
 // Handle requests for client files
 // app.use(express.static(path.resolve(__dirname, '../client')));
 app.use(express.static(path.resolve(__dirname, '../dist')));
+
+// serves login.. error when commmented out
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../src/index.html'));
 });
+
 // serve build files in production
 // if (process.env.NODE_ENV === 'production') {
 //   app.use('/build', express.static(path.join(__dirname, '../build')));
@@ -62,6 +68,22 @@ app.post('/register', userController.createUser, (req, res) => {
 });
 app.post('/login', userController.loginUser, (req, res) => {
   return res.status(200).json('Successful login');
+});
+
+app.get('/getCode', editorController.getCode, (req, res) => {
+  res.status(200).json(res.locals.roomsData);
+});
+
+app.post('/postCode', editorController.postCode, (req, res) => {
+  res.status(200).send('Success: Code has been saved!');
+});
+
+app.post('/updateCode', editorController.updateCode, (req, res) => {
+  res.status(200).send('Success: Code has been updated!');
+});
+
+app.get('/deleteCode', editorController.deleteCode, (req, res) => {
+  res.status(200).send('Success: Code has been deleted!');
 });
 
 // Global error handler

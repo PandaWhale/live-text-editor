@@ -58,3 +58,5 @@ module.exports = {
     })
   ]
 };
+
+// npm i -D @babel/core @babel/preset-env @babel/preset-react babel-loader concurrently css-loader html-webpack-plugin nodemon sass-loader style-loader webpack webpack-cli webpack-dev-server

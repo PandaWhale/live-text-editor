@@ -1,5 +1,7 @@
 const { Pool } = require('pg');
-const URL = 'postgres://kenhgyvo:tmusXooNdnmQ35ja1k8ILimiD5oIj0yn@drona.db.elephantsql.com:5432/kenhgyvo';
+// change url
+const URL =
+  'postgres://yttfztlt:B9l5BgOjVwBO5hmMcaVa9rO8iwEpr7ty@drona.db.elephantsql.com:5432/yttfztlt';
 const pool = new Pool({ connectionString: URL });
 
 pool.on('connect', () => {
@@ -11,4 +13,4 @@ module.exports = {
     console.log(`this is the query: ${query}`);
     return pool.query(query, params, cb);
   }
-}
+};
