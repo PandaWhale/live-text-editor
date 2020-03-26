@@ -1,8 +1,10 @@
 const express = require('express');
 const path = require('path');
 const socket = require('socket.io');
+
 const app = express();
 const userController = require('./controllers/userController');
+
 const PORT = 3000;
 
 const server = app.listen(PORT, () => {
@@ -12,14 +14,14 @@ const server = app.listen(PORT, () => {
 const io = socket(server);
 
 // test for connection
-io.on('connection', socket => {
+io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('user disconnected');
   });
 
   // Join room when 'room' event is emitted
-  socket.on('room', data => {
-    socket.join(data.room, err => {
+  socket.on('room', (data) => {
+    socket.join(data.room, (err) => {
       if (err) console.error(err);
     });
     console.log(`User ${socket.id} joined room ${data.room}`);
@@ -29,7 +31,7 @@ io.on('connection', socket => {
   // TODO: Handle leave room event when user switches room
 
   // handle coding event
-  socket.on('coding', data => {
+  socket.on('coding', (data) => {
     console.log(data);
     socket.broadcast.to(data.room).emit('code sent from server', data);
   });
@@ -43,7 +45,7 @@ app.use(express.json());
 // app.use(express.static(path.resolve(__dirname, '../client')));
 app.use(express.static(path.resolve(__dirname, '../dist')));
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../src/index.html'));
+  res.status(200).sendFile(path.join(__dirname, '../src/index.html'));
 });
 // serve build files in production
 // if (process.env.NODE_ENV === 'production') {
@@ -54,15 +56,11 @@ app.get('/', (req, res) => {
 // }
 
 // Define route handlers
-app.get('/secret', function(req, res) {
+app.get('/secret', (req, res) => {
   res.send('The password is potato');
 });
-app.post('/register', userController.createUser, (req, res) => {
-  return res.status(200).send('Successful add to database');
-});
-app.post('/login', userController.loginUser, (req, res) => {
-  return res.status(200).json('Successful login');
-});
+app.post('/register', userController.createUser, (req, res) => res.status(200).send('Successful add to database'));
+app.post('/login', userController.loginUser, (req, res) => res.status(200).json('Successful login'));
 
 // Global error handler
 app.use((err, req, res, next) => {
