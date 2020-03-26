@@ -1,8 +1,12 @@
 const express = require('express');
 const path = require('path');
 const socket = require('socket.io');
+
 const app = express();
 const userController = require('./controllers/userController');
+const cookieController = require('./controllers/cookieController');
+const sessionController = require('./controllers/sessionController');
+
 const PORT = 3000;
 
 const server = app.listen(PORT, () => {
@@ -12,14 +16,14 @@ const server = app.listen(PORT, () => {
 const io = socket(server);
 
 // test for connection
-io.on('connection', socket => {
+io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('user disconnected');
   });
 
   // Join room when 'room' event is emitted
-  socket.on('room', data => {
-    socket.join(data.room, err => {
+  socket.on('room', (data) => {
+    socket.join(data.room, (err) => {
       if (err) console.error(err);
     });
     console.log(`User ${socket.id} joined room ${data.room}`);
@@ -29,7 +33,7 @@ io.on('connection', socket => {
   // TODO: Handle leave room event when user switches room
 
   // handle coding event
-  socket.on('coding', data => {
+  socket.on('coding', (data) => {
     console.log(data);
     socket.broadcast.to(data.room).emit('code sent from server', data);
   });
@@ -54,15 +58,27 @@ app.get('/', (req, res) => {
 // }
 
 // Define route handlers
-app.get('/secret', function(req, res) {
-  res.send('The password is potato');
-});
-app.post('/register', userController.createUser, (req, res) => {
-  return res.status(200).send('Successful add to database');
-});
-app.post('/login', userController.loginUser, (req, res) => {
-  return res.status(200).json('Successful login');
-});
+app.get('/secret', (req, res) => res.status(418).send('The password is potato'));
+
+app.post('/register',
+  userController.encrypt,
+  userController.create,
+  (req, res) => res.redirect(307, './login'));
+
+app.post('/login',
+  userController.getUser,
+  userController.authenticate,
+  cookieController.encrypt,
+  cookieController.setSSID,
+  sessionController.start,
+  sessionController.manage,
+  (req, res) => res.status(204));
+
+app.post('/logout',
+  sessionController.verify,
+  sessionController.end,
+  cookieController.removeSSID,
+  (req, res) => res.status(204));
 
 // Global error handler
 app.use((err, req, res, next) => {
@@ -70,10 +86,10 @@ app.use((err, req, res, next) => {
     console.log(err);
     const defaultErr = {
       log: 'Express error handler caught unknown middleware error',
-      status: 400,
+      status: 500,
       message: { err: 'An error occurred' }
     };
-    const errorObj = Object.assign(defaultErr, err);
+    const errorObj = { ...defaultErr, ...err };
     res.status(errorObj.status).json(errorObj.message);
   }
 });

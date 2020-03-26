@@ -1,89 +1,69 @@
-const db = require('../database/database.js');
 const bcrypt = require('bcrypt');
+const db = require('../database/database.js');
 
 const userController = {};
 
-// Add user info to database
-userController.createUser = (req, res, next) => {
-  const { username, password } = req.body;
-  const queryArr1 = [username];
-  const queryString = 'SELECT * FROM users WHERE username = $1'
-  // search for any rows in database where username exists
-  db.query(queryString, queryArr1, (err, data) => {
-    if (err) {
+userController.getUser = (req, res, next) => {
+  const queryStr = `SELECT * FROM users
+                    WHERE username = $1`;
+  const queryArr = [req.body.username];
+  db.query(queryStr, queryArr)
+    .then((data) => {
+      if (data.rows !== []) return next;
       return next({
-          log: 'An error has occurred in createUser',
-          status: 400,
-          err: { err },
+        log: 'User does not exist',
+        status: 404,
+        message: { err }
       });
-    } else if (data.rows.length > 0) {
-        return next({
-          log: 'Username already exists',
-          status: 409,
-          err: { err },
-        });
-      } else {
-          // hash pasword with bcrypt
-          bcrypt.hash(password, 10,
-            function(err, hashedPassword) {
-              if (err) { 
-                next(err);
-              } else {
-                  console.log('hashedPassword: ', hashedPassword);
-                  const queryArr2 = [username, hashedPassword];
-                  const queryStr = 'INSERT INTO users (username,password) VALUES($1, $2)';
-                  // stores username and hashed password in table in database
-                  db.query(queryStr, queryArr2, (err, data) => {
-                    if (err) {
-                      return next({
-                          log: 'An error has occurred in createUser',
-                          status: 400,
-                          err: { err },
-                      });
-                    } else return next();
-                  })
-                }
-            });
-        }
-  })
+    })
+    .catch((err) => next({
+      log: 'There was a problem getting user information',
+      status: 500,
+      message: { err }
+    }));
 };
 
-userController.loginUser = (req, res, next) => {
-  const { username, password } = req.body;
-  const queryArr = [username];
-  const queryStr = 'SELECT * FROM users WHERE username = $1'
-  // retrieves rows in table in database where username matches
-  db.query(queryStr, queryArr, (err, data) => {
-    if (err) {
-      return next({
-          log: 'An error has occurred in loginUser',
-          status: 400,
-          err: { err },
-      });
-    } else {
-        if (data.rows.length > 0) {
-          // use bcrypt to authenticate password
-          bcrypt.compare(password, data.rows[0].password, function(err, same) {
-            if (same) {
-              return next();
-            } else {
-                return next({
-                  log: 'Email and password does not match',
-                  status: 401,
-                  err: { err },
-                });
-              }
-          });
-          } else {
-              return next({
-                log: 'Username does not exist',
-                status: 406,
-                err: { err },
-              });
-            }
-      }
-  })
-}
+userController.encrypt = (req, res, next) => {
+  bcrypt.hash(req.body.password, 10)
+    .then((hash) => {
+      res.locals.user = { ...req.body, password: hash };
+      return next();
+    })
+    .catch((err) => next({
+      log: 'Input format incorrect',
+      status: 400,
+      message: { err }
+    }));
+};
 
+userController.authenticate = (req, res, next) => {
+  bcrypt.compare(res.locals.user.password, req.body.password)
+    .then((result) => {
+      if (result) return next();
+      return next({
+        log: 'Username or password incorrect',
+        status: 401,
+        message: { err }
+      });
+    })
+    .catch((err) => next({
+      log: 'There was a problem authenticating your login information',
+      status: 500,
+      message: { err }
+    }));
+};
+
+userController.create = (req, res, next) => {
+  const queryStr = `INSERT INTO users (firstname, lastname, username, password)
+                    VALUES ($1, $2, $3, $4)`;
+  const queryArr = Object.values(res.locals.user);
+  db.query(queryStr, queryArr)
+    .then(() => next())
+    .catch((err) => next({
+      log: 'Username already exists',
+      status: 400,
+      message: { err }
+    }));
+};
 
 module.exports = userController;
