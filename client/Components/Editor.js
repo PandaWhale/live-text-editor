@@ -1,11 +1,11 @@
 import React from 'react';
-import Console from './Console';
 
 // CodeMirror imports
 import { Controlled as CodeMirror } from 'react-codemirror2';
 import '../assets/codemirror-5.52.0/mode/javascript/javascript';
 import '../assets/codemirror-5.52.0/lib/codemirror.css';
 import '../assets/codemirror-5.52.0/theme/dracula.css';
+import Console from './Console';
 
 const Editor = props => {
   const options = {
